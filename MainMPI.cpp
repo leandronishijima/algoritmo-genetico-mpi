@@ -76,23 +76,27 @@ void executaAlgoritmoComThreads() {
 
 int main(int argc, char *argv[]) {
 
-	int numbernodes, mynode;
+	int numbernodes, rank;
 	
-	MPI::Init();
+	MPI::Init(argc, argv);
 
 	numnodes = MPI::COMM_WORLD.Get_size();
-	mynode   = MPI::COMM_WORLD.Get_rank();
+	rank = MPI::COMM_WORLD.Get_rank();
 
-	if( mynode != 0 ){
-	    MPI::COMM_WORLD.Send( &sum, 1, MPI::INT, 0, 1 );
-	} else {
-	    for( int j=1; j<numnodes; ++j ){
-	      MPI::COMM_WORLD.Recv( &accum, 1, MPI::INT, j, 1, status);
-	      sum = sum + accum;
-        }
+	switch(rank) {
+
+		case 0:
+			p = new Point(1,2);
+			p->pack(buf, BUF_SIZE, MPI::COMM_WORLD);
+			MPI::COMM_WORLD.Send(buf, BUF_SIZE, MPI::PACKED, 1, 0);
+			break;
+
+		case 1:
+			MPI::COMM_WORLD.Recv(buf, BUF_SIZE, MPI::PACKED, 0, 0, stat);
+			p = new Point(buf,BUF_SIZE,MPI::COMM_WORLD);
+			break;
+
 	}
-    if( mynode == 0 )
-	    std::cout << "The sum from 0 to 1000 is: " << sum << endl;
 
 	MPI::Finalize();
 	return 0;
