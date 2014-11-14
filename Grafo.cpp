@@ -2,15 +2,30 @@
 #include <stdlib.h>
 #include <time.h>
 #include <map>
+#include <mpi.h>
 
 #include "Grafo.h"
 #include "Vertice.h"
 #include "Aresta.h"
 
+using namespace std;
+
 Grafo::Grafo() {
 	srand(time(NULL));
 	avaliacao = -1;
 }
+
+//Grafo::Grafo(void *, int, MPI::Comm&) {
+//	int offset = 0;
+//	MPI::INT.Unpack(buf, size, &x, 1, offset, com);
+//	MPI::INT.Unpack(buf, size, &y, 1, offset, com);
+//}
+//
+//void Point::pack(void *buf, int size, MPI::Comm& com) {
+//	int offset = 0;E
+//	MPI::INT.Pack(&x, 1, buf, size, offset, com);E
+//	MPI::INT.Pack(&y, 1, buf, size, offset, com);E
+//}
 
 Vertice Grafo::adicionaVertice(int numeroVertice, int corVertice) {
 	Vertice v = Vertice();

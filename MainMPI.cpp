@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <thread>
 #include <chrono>
+#include <string>
 
 #include "Grafo.h"
 #include "Cromossomo.h"
@@ -19,17 +20,32 @@ void executaAlgoritmoGenetico(vector<Grafo> populacao) {
 	algoritmo.executaAlgoritmo();
 }
 
-void executaAlgoritmoSequencial() {
-	GeradorDeGrafo gerador = GeradorDeGrafo("grafo6.txt");
+void executaAlgoritmoSequencialComGrafoComCoresIguais(const char* nomeDoArquivo) {
+	GeradorDeGrafo gerador = GeradorDeGrafo(nomeDoArquivo);
 	gerador.iteraArquivoGerandoGrafoComCorUnica();
 	Grafo grafoComCorUnica = gerador.getGrafo();
 
-	gerador = GeradorDeGrafo("grafo6.txt");
+	vector<Grafo> populacao;
+	populacao.push_back(grafoComCorUnica);
+
+	chrono::time_point<chrono::system_clock> inicio, fim;
+	inicio = chrono::system_clock::now();
+
+	executaAlgoritmoGenetico(populacao);
+
+	fim = chrono::system_clock::now();
+
+	chrono::duration<double> milisegundos = fim - inicio;
+
+	cout << "Tempo de processamento slave 1: " << milisegundos.count() << endl;
+}
+
+void executaAlgoritmoSequencialComCoresAleatorias(const char* nomeDoArquivo) {
+	GeradorDeGrafo gerador = GeradorDeGrafo(nomeDoArquivo);
 	gerador.iteraArquivoGerandoGrafoComCoresRandom();
 	Grafo grafoComCoresAleatorias = gerador.getGrafo();
 
 	vector<Grafo> populacao;
-	populacao.push_back(grafoComCorUnica);
 	populacao.push_back(grafoComCoresAleatorias);
 
 	chrono::time_point<chrono::system_clock> inicio, fim;
@@ -41,61 +57,42 @@ void executaAlgoritmoSequencial() {
 
 	chrono::duration<double> milisegundos = fim - inicio;
 
-	cout << "Tempo de processamento (Sequencial): " << milisegundos.count() << endl;
-}
-
-void executaAlgoritmoComThreads() {
-	GeradorDeGrafo gerador = GeradorDeGrafo("grafo6.txt");
-	gerador.iteraArquivoGerandoGrafoComCorUnica();
-	Grafo grafoComCorUnica = gerador.getGrafo();
-
-	gerador = GeradorDeGrafo("grafo6.txt");
-	gerador.iteraArquivoGerandoGrafoComCoresRandom();
-	Grafo grafoComCoresAleatorias = gerador.getGrafo();
-
-	vector<Grafo> populacaoComCorUnica;
-	populacaoComCorUnica.push_back(grafoComCorUnica);
-
-	vector<Grafo> populacaoComCoresAleatorias;
-	populacaoComCoresAleatorias.push_back(grafoComCoresAleatorias);
-
-	chrono::time_point<chrono::system_clock> inicio, fim;
-	inicio = chrono::system_clock::now();
-
-	thread t1(executaAlgoritmoGenetico, populacaoComCorUnica);
-	thread t2(executaAlgoritmoGenetico, populacaoComCoresAleatorias);
-
-	t1.join();
-	t2.join();
-
-	fim = chrono::system_clock::now();
-	chrono::duration<double> milisegundos = fim - inicio;
-
-	cout << "Tempo de processamento (2 threads): " << milisegundos.count() << endl;
+	cout << "Tempo de processamento slave 2: " << milisegundos.count() << endl;
 }
 
 int main(int argc, char *argv[]) {
-
-	int numbernodes, rank;
 	
 	MPI::Init(argc, argv);
 
-	numnodes = MPI::COMM_WORLD.Get_size();
-	rank = MPI::COMM_WORLD.Get_rank();
+	MPI::Status status;
 
-	switch(rank) {
+	int id = MPI::COMM_WORLD.Get_rank();
+
+	switch(id) {
 
 		case 0:
-			p = new Point(1,2);
-			p->pack(buf, BUF_SIZE, MPI::COMM_WORLD);
-			MPI::COMM_WORLD.Send(buf, BUF_SIZE, MPI::PACKED, 1, 0);
+			string nomeDoArquivo = "grafo6.txt";
+			MPI::COMM_WORLD.Send(nomeDoArquivo.c_str(), 1, MPI::CHAR, 1, 0);
+			MPI::COMM_WORLD.Send(nomeDoArquivo.c_str(), 1, MPI::CHAR, 2, 0);
 			break;
 
 		case 1:
-			MPI::COMM_WORLD.Recv(buf, BUF_SIZE, MPI::PACKED, 0, 0, stat);
-			p = new Point(buf,BUF_SIZE,MPI::COMM_WORLD);
+			const char *nomeDoArquivoSlave1;
+			MPI::COMM_WORLD.Recv(&nomeDoArquivoSlave1, 1, MPI::CHAR, 0, 0, status);
+
+			cout << nomeDoArquivoSlave1 << endl;
+
+			executaAlgoritmoSequencialComGrafoComCoresIguais("grafo6.txt");
 			break;
 
+		case 2:
+			const char *nomeDoArquivoSlave2;
+			MPI::COMM_WORLD.Recv(&nomeDoArquivoSlave2, 1, MPI::CHAR, 0, 0, status);
+
+			cout << nomeDoArquivoSlave2 << endl;
+
+			executaAlgoritmoSequencialComCoresAleatorias("grafo6.txt");
+			break;
 	}
 
 	MPI::Finalize();
