@@ -3,7 +3,6 @@
 
 #include <map>
 #include <vector>
-#include <mpi.h>
 
 #include "Vertice.h"
 #include "Aresta.h"
@@ -19,8 +18,6 @@ class Grafo {
 
 public:
 	Grafo();
-	//Grafo(void *, int, MPI::Comm&);
-	//void pack(void *, int, MPI::Comm&);
 	Vertice adicionaVertice(int numeroVertice, int corVertice);
 	void adicionaArestaComCor1(int verticeValor1, int verticeValor2);
 	void adicionaArestaComCorAleatoria(int verticeValor1, int verticeValor2);

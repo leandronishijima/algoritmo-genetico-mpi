@@ -61,43 +61,44 @@ void executaAlgoritmoSequencialComCoresAleatorias(const char* nomeDoArquivo) {
 }
 
 int main(int argc, char *argv[]) {
+
+	int buffer[10];
+	MPI_Status status;
 	
 	MPI::Init(argc, argv);
 
-	MPI::Status status;
-
 	int id = MPI::COMM_WORLD.Get_rank();
 
-	switch(id) {
+	if(id == 0) {
 
-		case 0:
-			string nomeDoArquivo = "grafo6.txt";
-			MPI::COMM_WORLD.Send(nomeDoArquivo.c_str(), 1, MPI::CHAR, 1, 0);
-			MPI::COMM_WORLD.Send(nomeDoArquivo.c_str(), 1, MPI::CHAR, 2, 0);
-			break;
+		int numero = 6;
+		MPI::COMM_WORLD.Send(&numero, 1, MPI::INT, 1, 0);
+		MPI::COMM_WORLD.Send(&numero, 1, MPI::INT, 2, 0);
 
-		case 1:
-			const char *nomeDoArquivoSlave1;
-			MPI::COMM_WORLD.Recv(&nomeDoArquivoSlave1, 1, MPI::CHAR, 0, 0, status);
+		cout << "Master: " << numero << endl;
+	} else if(id == 1) {
+		cout << "iniciando Slave1 com arestas de cores iguais:" << endl;
+		
+		int novo;
 
-			cout << nomeDoArquivoSlave1 << endl;
+		MPI::COMM_WORLD.Recv(&novo, 1, MPI::INT, 0, 0);
 
-			executaAlgoritmoSequencialComGrafoComCoresIguais("grafo6.txt");
-			break;
+		string nomeDoArquivoSlave1 = "grafo" + to_string(novo) + ".txt";
 
-		case 2:
-			const char *nomeDoArquivoSlave2;
-			MPI::COMM_WORLD.Recv(&nomeDoArquivoSlave2, 1, MPI::CHAR, 0, 0, status);
+		executaAlgoritmoSequencialComGrafoComCoresIguais(nomeDoArquivoSlave1.c_str());
+	} 
+	else {
+		cout << "iniciando Slave2 grafo com população aleatória:" << endl;
+		
+		int novo;
 
-			cout << nomeDoArquivoSlave2 << endl;
+		MPI::COMM_WORLD.Recv(&novo, 1, MPI::INT, 0, 0);
 
-			executaAlgoritmoSequencialComCoresAleatorias("grafo6.txt");
-			break;
+		string nomeDoArquivoSlave2 = "grafo" + to_string(novo) + ".txt";
+
+		executaAlgoritmoSequencialComCoresAleatorias(nomeDoArquivoSlave2.c_str());
 	}
 
 	MPI::Finalize();
 	return 0;
 }
-
-// MPI_Pack / MPI_Unpack mecanismo de send/reciever para objetos
-// http://www.usrlocal.ca/~dbm/resources/MPI/4_mpi_c++/4_mpi_c++.pdf
